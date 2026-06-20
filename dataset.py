@@ -124,3 +124,112 @@ df_master.sort_values(by='gcm',ascending = True)
 df_master['category'].value_counts()
 
 df_master['product_type'].value_counts()
+
+# 1. Take our big master table (df_master) and group the rows together.
+# This is EXACTLY like a SQL GROUP BY product_type, acq_channel
+portfolio_summary = df_master.groupby(['product_type', 'acq_channel']).agg({
+    'spend_amount': 'sum',  # SQL: SUM(spend_amount)
+    'gcm': 'sum',           # SQL: SUM(gcm)
+    'risk_score': 'mean'    # SQL: AVG(risk_score)
+}).reset_index()            # This just cleans up the table format
+
+# 2. Round the decimals so it looks clean for a human (and an AI) to read
+portfolio_summary['spend_amount'] = portfolio_summary['spend_amount'].round(2)
+portfolio_summary['gcm'] = portfolio_summary['gcm'].round(2)
+portfolio_summary['risk_score'] = portfolio_summary['risk_score'].round(1)
+
+# 3. Print the final table on the screen
+portfolio_summary
+
+# 1. Filter our summary table to grab ONLY the row for the Gold card
+# (Using the exact clipboard/highlighter rule you mastered last week!)
+gold_portfolio = portfolio_summary[portfolio_summary['product_type'] == 'Gold']
+
+# 2. Extract the numbers from that row into simple variables
+channel = gold_portfolio['acq_channel'].values[0]
+total_spend = gold_portfolio['spend_amount'].values[0]
+margin = gold_portfolio['gcm'].values[0]
+risk = gold_portfolio['risk_score'].values[0]
+
+# 3. Combine these variables into a text sentence for the AI
+data_package_for_ai = f"""
+PORTFOLIO TARGET FOR AUDIT:
+- Product Tier: Gold Card
+- Acquisition Channel used: {channel}
+- Total Portfolio Spend Volume: ${total_spend}
+- Resulting Portfolio GCM: ${margin}
+- Average Credit Risk Score: {risk}/100
+"""
+
+# Print the final text package
+print(data_package_for_ai)
+
+# Designing the master system instructions
+system_prompt = """
+You are an Elite Fintech Risk Consultant and Senior Credit Portfolio Auditor.
+Your objective is to analyze the provided portfolio data package and generate a crisp, executive-ready mitigation strategy.
+
+You must strictly adhere to the following guardrails:
+1. Tone: Deeply analytical, authoritative, and corporate. No conversational fluff or empty greetings.
+2. Structure: Break your response into exactly three concise bullet points:
+   - IMPACT ANALYSIS: Explain exactly why this portfolio segment is leaking value based on the numbers.
+   - IMMEDIATE ACTION: Give one concrete tactical move the bank should make today (e.g., adjust rewards, halt acquisition).
+   - PORTFOLIO FORECAST: Predict what happens to the Gross Contribution Margin (GCM) if this action is executed.
+"""
+
+print("🧠 System Prompt Architecture successfully loaded in memory!")
+
+# 1. Install the brand new, updated Google GenAI library
+!pip install -q google-genai
+
+import google.genai as genai
+from google.genai import types
+
+# 2. Initialize the client (this automatically connects to the Colab environment)
+client = genai.Client()
+
+print("🚀 Modern AI Courier initialized and ready to transmit data...")
+
+# 3. Call the updated API using the new google.genai syntax
+response = client.models.generate_content(
+    model='gemini-2.5-flash',
+    contents=data_package_for_ai,
+    config=types.GenerateContentConfig(
+        system_instruction=system_prompt # Passing your corporate guardrails here
+    )
+)
+
+# 4. Print out the final executive strategy memo
+print("\n--- RECEIVED FROM AI AUDITOR ---")
+print(response.text)
+
+import google.genai as genai
+from google.genai import types
+from google.colab import userdata
+
+# 1. Safely pull your secret key from Colab's vault
+try:
+    api_key = userdata.get('GEMINI_API_KEY')
+except:
+    api_key = None
+
+if not api_key:
+    raise ValueError("Make sure you added 'GEMINI_API_KEY' to your Colab Secrets vault and enabled Notebook access!")
+
+# 2. Pass the key directly to the client
+client = genai.Client(api_key=api_key)
+
+print("🚀 Secure AI Courier initialized and ready to transmit data...")
+
+# 3. Call the updated API using the new google.genai syntax
+response = client.models.generate_content(
+    model='gemini-2.5-flash',
+    contents=data_package_for_ai,
+    config=types.GenerateContentConfig(
+        system_instruction=system_prompt
+    )
+)
+
+# 4. Print out the final executive strategy memo
+print("\n--- RECEIVED FROM AI AUDITOR ---")
+print(response.text)
